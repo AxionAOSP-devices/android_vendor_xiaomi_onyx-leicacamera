@@ -1,0 +1,54 @@
+From 38fdbaa910c6f5d5bd9803b219ccc1da96418d13 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 13:45:08 +0000
+Subject: [PATCH] Unlock Dual Video multi-camera mode (port of upstream 0009)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Upstream 0009 rewrote three self-instanceof capability checks in the stock
+dump's obfuscated device-config class. In the dyper dump that class kept its
+real name: smali_classes3/device_common.smali (500 methods, .super
+Ljava/lang/Object;, 252 "instance-of p0, p0, L...;" capability probes).
+
+Only Ldevice_common;->T3()Z actually gates Dual Video:
+
+  smali_classes5/com/xiaomi/microfilm/dualcam/mode/DualCamModuleEntry  -> support()
+  smali_classes5/com/xiaomi/microfilm/dualcam/mode/DualVideoRecordModule
+  smali_classes5/com/xiaomi/microfilm/ui/FragmentMicroFilm
+
+T3() resolved through Lv7/b;->e:Ldevice_common; (virtual dispatch on the
+per-device instance, which for this phone is Lonyx;). Neither Lonyx; nor its
+parent Lredmi_phone2; override T3(), so patching the base is enough.
+
+The check was "instance-of p0, p0, L䚋...;" - a leaf device class in the
+Lredmi_phone4; lineage. The onyx chain is
+onyx -> redmi_phone2 -> device_common -> Object, so it evaluated false and the
+mode stayed hidden. Forced to true.
+
+The other two hunks of upstream 0009 (c3()Z and the @Deprecated W2()Z, both set
+to 0x0 there) are NOT ported: they test the same leaf class, so on onyx they
+already return false and rewriting them would be a pure no-op. c3()Z has only
+two callers, both in smali/X5/f.smali, and neither is on the Dual Video path.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes3/device_common.smali | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/smali_classes3/device_common.smali b/smali_classes3/device_common.smali
+index d2f7b2fc..61efecf8 100644
+--- a/smali_classes3/device_common.smali
++++ b/smali_classes3/device_common.smali
+@@ -1725,7 +1725,7 @@
+ .method public T3()Z
+     .locals 0
+ 
+-    instance-of p0, p0, L䚋䚇䚅䛆䚅䚁䛆䚌䚍䚞䚁䚋䚍䛆䚭䚅䚍䚚䚉䚄䚌䚷䚘䚚䚇䚷䚚;
++    const/4 p0, 0x1
+ 
+     return p0
+ .end method
+-- 
+2.43.0
+

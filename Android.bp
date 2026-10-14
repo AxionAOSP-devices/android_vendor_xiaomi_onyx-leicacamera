@@ -1,0 +1,168 @@
+// Combined repo: the source-built MiSyS HAL, shim and config XMLs live in aidl/, shims/ and interfaces/, the blobs under proprietary/, all in one Soong namespace.
+
+soong_namespace {
+    imports: [
+        "vendor/xiaomi/onyx",
+    ],
+}
+
+cc_prebuilt_library_shared {
+    name: "libcamera_algoup_jni.xiaomi",
+    owner: "xiaomi",
+    strip: {
+        none: true,
+    },
+    target: {
+        android_arm64: {
+            srcs: [
+                "proprietary/system/lib64/libcamera_algoup_jni.xiaomi.so",
+            ],
+            shared_libs: [
+                "libgui_shim_miuicamera",
+                "libbinder",
+                "libcamera_client",
+                "libcamera_metadata",
+                "libcutils",
+                "libgui",
+                "liblog",
+                "libutils",
+                "libvndksupport",
+                "libandroid",
+                "libandroid_runtime",
+                "libbase",
+                "libmedia_jni_utils",
+                "libnativehelper",
+                "libnativewindow",
+                "libui",
+                "android.hidl.token@1.0-utils",
+                "libc++",
+                "libc",
+                "libm",
+                "libdl",
+            ],
+        },
+    },
+    compile_multilib: "64",
+    prefer: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libcamera_mianode_jni.xiaomi",
+    owner: "xiaomi",
+    strip: {
+        none: true,
+    },
+    target: {
+        android_arm64: {
+            srcs: [
+                "proprietary/system/lib64/libcamera_mianode_jni.xiaomi.so",
+            ],
+            shared_libs: [
+                "libgui_shim_miuicamera",
+                "libbinder",
+                "libcamera_client",
+                "libcamera_metadata",
+                "libcutils",
+                "libgui",
+                "liblog",
+                "libutils",
+                "libvndksupport",
+                "libxml2",
+                "libandroid",
+                "libmedia_jni_utils",
+                "libui",
+                "libc++",
+                "libc",
+                "libm",
+                "libdl",
+            ],
+        },
+    },
+    compile_multilib: "64",
+    prefer: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "libmicampostproc_client",
+    owner: "xiaomi",
+    strip: {
+        none: true,
+    },
+    target: {
+        android_arm64: {
+            srcs: [
+                "proprietary/system/lib64/libmicampostproc_client.so",
+            ],
+            shared_libs: [
+                "liblog",
+                "libutils",
+                "libcutils",
+                "libhardware",
+                "libnativewindow",
+                "libEGL",
+                "libGLESv2",
+                "libfmq",
+                "libgui",
+                "libui",
+                "libcamera_client",
+                "libcamera_metadata",
+                "libmedia_jni_utils",
+                "libnativehelper",
+                "libhidlbase",
+                "vendor.xiaomi.hardware.campostproc@1.0",
+                "libc++",
+                "libc",
+                "libm",
+                "libdl",
+            ],
+        },
+    },
+    compile_multilib: "64",
+    prefer: true,
+}
+
+cc_prebuilt_library_shared {
+    name: "vendor.xiaomi.hardware.campostproc@1.0",
+    owner: "xiaomi",
+    strip: {
+        none: true,
+    },
+    target: {
+        android_arm64: {
+            srcs: [
+                "proprietary/system/lib64/vendor.xiaomi.hardware.campostproc@1.0.so",
+            ],
+            shared_libs: [
+                "android.hardware.camera.common@1.0",
+                "libhidlbase",
+                "liblog",
+                "libutils",
+                "libcutils",
+                "libc++",
+                "libc",
+                "libm",
+                "libdl",
+            ],
+        },
+    },
+    compile_multilib: "64",
+    prefer: true,
+}
+
+// The Dyper MiuiCamera build, shipped already patched (see patches/) - the build re-signs it with the ROM's platform key, so the key on the blob is irrelevant.
+android_app_import {
+    name: "MiuiCamera",
+    owner: "xiaomi",
+    apk: "proprietary/system/priv-app/MiuiCamera/MiuiCamera.apk",
+    overrides: [
+        "Aperture",
+        "Camera",
+        "Camera2",
+        "GoogleCameraGo",
+    ],
+    certificate: "platform",
+    dex_preopt: {
+        enabled: false,
+    },
+    privileged: true,
+}

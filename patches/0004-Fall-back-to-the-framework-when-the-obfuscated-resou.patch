@@ -1,0 +1,69 @@
+From 43d22cbd9ec8938ccb394731d9d0b5dd39147fc3 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 12:22:27 +0000
+Subject: [PATCH] Fall back to the framework when the obfuscated resource is
+ missing
+
+w8/a;->c() resolves a drawable id through Resources.getResourceName(), prefixes obfu_res/ and opens it from the asset bundle. Those ids only exist in the dump this APK came from, so on another device AssetManager.open() throws FileNotFoundException and the caller gets nothing - the UI loses its icons. Keep the id in a new local, catch the miss and hand it to ResourcesCompat.getDrawable() instead.
+
+smali assemble of this file was checked standalone.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes5/w8/a.smali | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/smali_classes5/w8/a.smali b/smali_classes5/w8/a.smali
+index ad6a19c0..1593f774 100644
+--- a/smali_classes5/w8/a.smali
++++ b/smali_classes5/w8/a.smali
+@@ -165,7 +165,7 @@
+ .end method
+ 
+ .method public static c(Landroid/content/res/Resources;ILjava/lang/Integer;)Landroid/graphics/drawable/Drawable;
+-    .locals 5
++    .locals 6
+     .param p1    # I
+         .annotation build Landroidx/annotation/IdRes;
+         .end annotation
+@@ -231,6 +231,8 @@
+     move p2, v2
+ 
+     :goto_0
++    move v5, p1
++
+     const/4 v3, 0x1
+ 
+     invoke-virtual {p0, p1, p2, v0, v3}, Landroid/content/res/Resources;->getValueForDensity(IILandroid/util/TypedValue;Z)V
+@@ -251,9 +253,12 @@
+ 
+     move-result-object p2
+ 
++    :try_start_6
+     invoke-virtual {p2, p1}, Landroid/content/res/AssetManager;->open(Ljava/lang/String;)Ljava/io/InputStream;
+ 
+     move-result-object p2
++    :try_end_6
++    .catch Ljava/io/FileNotFoundException; {:try_start_6 .. :try_end_6} :catch_6
+ 
+     :try_start_0
+     invoke-static {p2}, Lkotlin/jvm/internal/k;->c(Ljava/lang/Object;)V
+@@ -338,4 +343,15 @@
+     invoke-static {p2, p0}, Lac/e;->h(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+ 
+     throw p1
++
++    :catch_6
++    move-exception p2
++
++    const/4 p2, 0x0
++
++    invoke-static {p0, v5, p2}, Landroidx/core/content/res/ResourcesCompat;->getDrawable(Landroid/content/res/Resources;ILandroid/content/res/Resources$Theme;)Landroid/graphics/drawable/Drawable;
++
++    move-result-object p0
++
++    return-object p0
+ .end method
+-- 
+2.43.0
+

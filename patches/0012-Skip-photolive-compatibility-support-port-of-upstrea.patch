@@ -1,0 +1,72 @@
+From 662aefb6cc88d9baa7db785e70815e394a4fd179 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 15:31:37 +0000
+Subject: [PATCH] Skip photolive compatibility support (port of upstream
+ 23fcbbe6)
+
+Upstream rewrote LivePhotoImp.isDeviceSupportLivePhoto (its dump's
+Lg0/j;->v()Z) to "const/4 v0, 0x1 / return v0". That helper has no
+counterpart in this build: the dyper APK contains no
+ro.product.camera.livephoto.support key, no LivePhotoImp /
+isDeviceSupportLivePhoto symbol, and no reflective Process.getTotalMemory()
+call, so the whole prop-bitmask + RAM-ladder + "_global" + supported-device
+list probe simply does not exist here. Its ro.product.* reads are limited to
+brand, country, cpu, locale, manufacturer, marketname, mod_device and model.
+In this build the same decision lives in the per-device config class instead.
+
+How that class is chosen at runtime (why a base-class edit is the right
+place): smali_classes5/Dg/f0.smali i()Ldevice_common; does
+Class.forName(Build.DEVICE).newInstance() through the hash switch in
+smali_classes3/I8/c.smali a() - default branch = the plain name - and falls
+back to a bare Ldevice_common; instance on ClassNotFoundException. "onyx" is
+not one of the keys in LI8/a;->a, so this phone resolves to the real Lonyx;
+class (top-level, smali_classes3/onyx.smali), and everything dispatches
+virtually off Lv7/b;->e:Ldevice_common;.
+
+The photolive probe is Ldevice_common;->P5()Z. Its callers are only live
+photo paths: smali/com/android/camera/data/data/s.smali y(I)Z (Jacoco key is
+literally isSupportVideoModeLivePhoto), VideoModule (3 sites),
+module/video/x.smali and fragment/settings/CameraCamcorderPreferenceFragment.
+The base body was "instance-of p0, p0, Ldada;" - one leaf device class in the
+Lxiaomi_phone4; lineage, unrelated to the onyx chain
+(onyx -> redmi_phone2 -> device_common) - so it returned false for every
+device except that leaf. Forced to 0x1, which is the same "skip the
+compatibility check" effect as upstream.
+
+Deliberately not touched, with the reason:
+
+* Lonyx;->P5()Z already overrides the base with 0x1, so on today's onyx
+  instance this edit changes nothing observable. It matters for the bare
+  Ldevice_common; fallback instance - i.e. exactly the "device is not in the
+  support table" case upstream's patch was written for.
+* Photo-mode LiveShot uses the inverted flag Ldevice_common;->y2()Z ("live
+  shot unavailable"): base returns 0x0 and Lredmi_phone2;->y2()Z returns
+  !instanceof Lonyx;, which is already 0 for this phone. Its consumers -
+  features/mode/capture/b.smali (getLiveShotItemBuilder), TopBarUtils,
+  L4/k.smali (pref_retain_live_shot) and Na/b - therefore already show the
+  LiveShot entry. Rewriting y2 to 0x1 would switch it OFF for onyx, so it is
+  left as is.
+* The other guard on that same LiveShot branch, LE7/d;->g()Z, is already
+  hardcoded to 0x1 in this dump.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes3/device_common.smali | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/smali_classes3/device_common.smali b/smali_classes3/device_common.smali
+index 61efecf8..f37ee508 100644
+--- a/smali_classes3/device_common.smali
++++ b/smali_classes3/device_common.smali
+@@ -1394,7 +1394,7 @@
+ .method public P5()Z
+     .locals 0
+ 
+-    instance-of p0, p0, Ldada;
++    const/4 p0, 0x1
+ 
+     return p0
+ .end method
+-- 
+2.43.0
+

@@ -1,0 +1,8 @@
+# Copyright (C) 2023 Paranoid Android
+# SPDX-License-Identifier: Apache-2.0
+
+# Defines a new SELinux type for the IMiSys service and marks it as a hardware service manager
+type misys_service, app_api_service, system_server_service, service_manager_type;
+
+# Allows the camera app to find and connect to the IMiSys hardware service we just defined
+allow priv_app misys_service:service_manager find;

@@ -1,0 +1,28 @@
+From 3759ec97278abb58eeff0da31c3736b66a02b3de Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 12:18:23 +0000
+Subject: [PATCH] Force the mod_device _global check to true
+
+The capability resolver probes ro.product.mod_device for "_global" and falls back to a restricted feature set when it misses. On a non-Turbo device the probe always misses, so the flag is forced on. Ported from the Dyper patched build.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes5/v7/c.smali | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/smali_classes5/v7/c.smali b/smali_classes5/v7/c.smali
+index 33d46931..7dc7ce5c 100644
+--- a/smali_classes5/v7/c.smali
++++ b/smali_classes5/v7/c.smali
+@@ -234,6 +234,8 @@
+ 
+     move-result v0
+ 
++    const/4 v0, 0x1
++
+     sput-boolean v0, Lv7/c;->m:Z
+ 
+     const-string v0, "ro.boot.hwc"
+-- 
+2.43.0
+

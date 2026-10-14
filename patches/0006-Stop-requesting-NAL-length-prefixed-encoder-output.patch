@@ -1,0 +1,28 @@
+From 7ed03e1cfbb4de1055fcfec36ee0a85b875be03d Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 12:23:23 +0000
+Subject: [PATCH] Stop requesting NAL length-prefixed encoder output
+
+setVideoNalParams() sets feature-nal-length-bitstream, nal-length-in-bytes and vendor.qti-ext-enc-nal-length-bs.num-bytes on the MediaFormat when the capability flag is on. The onyx encoder emits Annex-B and the length-prefixed stream produces files no player accepts, so jump straight past the block.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes5/yb/f.smali | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/smali_classes5/yb/f.smali b/smali_classes5/yb/f.smali
+index 9b1485ab..2a7b91ce 100644
+--- a/smali_classes5/yb/f.smali
++++ b/smali_classes5/yb/f.smali
+@@ -712,7 +712,7 @@
+ 
+     iget-boolean v7, v4, Lyb/q;->y:Z
+ 
+-    if-eqz v7, :cond_17
++    goto/16 :cond_17
+ 
+     iget v7, v4, Lyb/q;->l:I
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,31 @@
+From 5e49479660677e0fe6b7e020332b600161874dc2 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 12:23:41 +0000
+Subject: [PATCH] Stamp POCO F7 instead of REDMI Turbo 4 Pro
+
+The watermark plugin asks the device config class for a {brand, model} pair and prints it verbatim; Lonyx; inherits the codename the dump came from. This is not ro.product.marketname, so no prop can fix it. The class resolves on ro.product.device=onyx, which is this phone, so the pair becomes POCO / F7.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali_classes3/onyx.smali | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/smali_classes3/onyx.smali b/smali_classes3/onyx.smali
+index 4375447f..f242c547 100644
+--- a/smali_classes3/onyx.smali
++++ b/smali_classes3/onyx.smali
+@@ -499,9 +499,9 @@
+ 
+     invoke-direct {p0, v0}, Landroid/util/SparseArray;-><init>(I)V
+ 
+-    const-string v0, "REDMI"
++    const-string v0, "POCO"
+ 
+-    const-string v1, "Turbo 4 Pro"
++    const-string v1, "F7"
+ 
+     filled-new-array {v0, v1}, [Ljava/lang/String;
+ 
+-- 
+2.43.0
+

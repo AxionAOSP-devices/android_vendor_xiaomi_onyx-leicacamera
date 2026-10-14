@@ -1,0 +1,6 @@
+# MiuiCamera's watermark plugin reads the two stock watermark images through /data/vendor/camera, while the HAL package files live in /odm/etc/camera.
+on post-fs-data
+    symlink /odm/etc/camera/72.png /data/vendor/camera/72.png
+    symlink /odm/etc/camera/73.png /data/vendor/camera/73.png
+    chown cameraserver camera /data/vendor/camera/72.png
+    chown cameraserver camera /data/vendor/camera/73.png

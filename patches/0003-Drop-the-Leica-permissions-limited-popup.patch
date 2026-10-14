@@ -1,0 +1,33 @@
+From 135b28036517edb8eca3f4c59813eb3aa6870974 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Wed, 14 Oct 2026 12:19:39 +0000
+Subject: [PATCH] Drop the Leica permissions-limited popup
+
+The handler for what=0x7f140aef calls B/N3;->c() to show the dialog that warns the Leica plugin is missing on a non-stock ROM. That dialog fires on every cold start here. Keep the branch, log it instead, so the message id stays documented.
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali/com/android/camera/ActivityBase$c.smali | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/smali/com/android/camera/ActivityBase$c.smali b/smali/com/android/camera/ActivityBase$c.smali
+index b9d6813a..34fb2ace 100644
+--- a/smali/com/android/camera/ActivityBase$c.smali
++++ b/smali/com/android/camera/ActivityBase$c.smali
+@@ -78,9 +78,11 @@
+     goto/16 :goto_1
+ 
+     :pswitch_1
+-    const p1, 0x7f140aef
++    const-string p0, "[LeicaPopupFix] suppressed Leica permission popup"
+ 
+-    invoke-static {p0, p1, v6}, LB/N3;->c(Landroid/content/Context;IZ)V
++    new-array p1, v6, [Ljava/lang/Object;
++
++    invoke-static {v4, p0, p1}, Lcom/android/camera/log/Log;->w(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V
+ 
+     goto/16 :goto_1
+ 
+-- 
+2.43.0
+

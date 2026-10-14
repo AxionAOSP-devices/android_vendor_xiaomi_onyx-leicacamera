@@ -1,0 +1,54 @@
+# Rules harvested from real enforcing-mode avc denials on the POCO F7 (onyx); both platform_app (ROM build, platform key) and priv_app (testkey-signed KernelSU/ADB user update) are covered.
+
+# platform_app: the capture handoff is bidirectional - the app registers a callback with the HAL (MiCamService BGService) and the provider calls back into it; missing the callback transfer stalls PostProcessor 12s on 'App buffer is not enough' -> onCaptureFailed.
+allow platform_app hal_camera_default:binder { call transfer };
+allow platform_app hal_camera_default:fd { use transfer };
+allow hal_camera_default platform_app:binder { call transfer };
+allow hal_camera_default platform_app:fd { use transfer };
+
+# Codec2 component store lookup while setting up a recording
+allow platform_app default_android_service:service_manager find;
+
+# The watermark / filter assets under /data/vendor/camera are mmap'd, not just read
+allow platform_app vendor_camera_data_file:file { getattr open read map };
+
+# ------------------------------------------------------------------- priv_app
+allow priv_app hal_camera_default:binder { call transfer };
+allow hal_camera_default priv_app:binder { call transfer };
+allow priv_app hal_misys_vendor_service:service_manager find;
+allow priv_app hal_aidlbgservice_service:service_manager find;
+allow priv_app default_android_service:service_manager find;
+allow priv_app vendor_camera_data_file:dir { search open read };
+allow priv_app vendor_camera_data_file:file { getattr open read map };
+
+allow priv_app proc_pressure_cpu:file { getattr open read };
+allow priv_app proc_pressure_mem:file { getattr open read };
+allow priv_app proc_pressure_io:file { getattr open read };
+
+get_prop(priv_app, vendor_camera_p3enable_prop)
+get_prop(priv_app, vendor_camera_sensor_prop)
+get_prop(priv_app, vendor_audio_prop)
+get_prop(priv_app, vendor_displayfeature_prop)
+
+binder_call(priv_app, hal_misys_vendor)
+binder_call(hal_misys_vendor, priv_app)
+
+# camera provider: QSPM is reached by the camera algo framework threads (AlgoFwkThd*).
+allow hal_camera_default vendor_hal_qspmhal_service:service_manager find;
+allow hal_camera_default vendor_hal_qspmhal_default:binder call;
+
+# panel_build_id / displayfeature sysfs nodes read per frame
+allow hal_camera_default vendor_sysfs_displayfeature:dir search;
+allow hal_camera_default vendor_sysfs_displayfeature:file { getattr open read };
+
+allow hal_camera_default sysfs:file { getattr open read };
+
+# traversing the app data/tmp dirs for the snapshot handoff
+allow hal_camera_default system_data_file:dir search;
+allow hal_camera_default shell_data_file:dir search;
+
+# codec2: the Xiaomi Codec2 store (audiocommon/ccode2) registers IComponentStore vendor0_software from the mediacodec domain - without it video recording never starts; the type is mediaswcodec, there is no media.swcodec in the linked policy.
+allow mediacodec default_android_service:service_manager add;
+allow mediacodec default_android_service:service_manager find;
+allow mediaserver default_android_service:service_manager find;
+allow mediaswcodec default_android_service:service_manager find;
