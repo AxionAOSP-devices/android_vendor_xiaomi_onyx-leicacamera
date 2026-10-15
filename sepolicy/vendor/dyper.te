@@ -6,8 +6,7 @@ allow platform_app hal_camera_default:fd { use };
 allow hal_camera_default platform_app:binder { call transfer };
 allow hal_camera_default platform_app:fd { use };
 
-# Codec2 component store lookup while setting up a recording
-allow platform_app default_android_service:service_manager find;
+# A c2-store lookup from an app domain needs its own vndservice type; finding default_android_service is neverallowed for app domains.
 
 # The watermark / filter assets under /data/vendor/camera are mmap'd, not just read
 allow platform_app vendor_camera_data_file:file { getattr open read map };
@@ -17,7 +16,6 @@ allow priv_app hal_camera_default:binder { call transfer };
 allow hal_camera_default priv_app:binder { call transfer };
 allow priv_app hal_misys_vendor_service:service_manager find;
 allow priv_app hal_aidlbgservice_service:service_manager find;
-allow priv_app default_android_service:service_manager find;
 allow priv_app vendor_camera_data_file:dir { search open read };
 allow priv_app vendor_camera_data_file:file { getattr open read map };
 
@@ -33,8 +31,7 @@ get_prop(priv_app, vendor_displayfeature_prop)
 binder_call(priv_app, hal_misys_vendor)
 binder_call(hal_misys_vendor, priv_app)
 
-# camera provider: QSPM is reached by the camera algo framework threads (AlgoFwkThd*).
-allow hal_camera_default vendor_hal_qspmhal_service:service_manager find;
+# QSPM service find is reserved for qspmhal clients by qcom's own neverallow (device/qcom/sepolicy_vndr/.../qspmhal.te:40); only the binder rule is legal.
 allow hal_camera_default vendor_hal_qspmhal_default:binder call;
 
 # panel_build_id / displayfeature sysfs nodes read per frame
@@ -43,9 +40,8 @@ allow hal_camera_default vendor_sysfs_displayfeature:file { getattr open read };
 
 allow hal_camera_default sysfs:file { getattr open read };
 
-# traversing the app data/tmp dirs for the snapshot handoff
+# traversing the app data dir for the snapshot handoff (shell_data_file is neverallowed to any non-shell domain)
 allow hal_camera_default system_data_file:dir search;
-allow hal_camera_default shell_data_file:dir search;
 
 # codec2: the Xiaomi Codec2 store (audiocommon/ccode2) registers IComponentStore vendor0_software from the mediacodec domain - without it video recording never starts; the type is mediaswcodec, there is no media.swcodec in the linked policy.
 allow mediacodec default_android_service:service_manager add;
