@@ -6,7 +6,7 @@ allow platform_app hal_camera_default:fd { use };
 allow hal_camera_default platform_app:binder { call transfer };
 allow hal_camera_default platform_app:fd { use };
 
-# A c2-store lookup from an app domain needs its own vndservice type; finding default_android_service is neverallowed for app domains.
+# The app-side c2-store find needs no rule here: labelling vendor0_software as hal_codec2_service in service_contexts puts it under the platform hal_codec2_client attribute, which already covers every non-isolated app domain.
 
 # The watermark / filter assets under /data/vendor/camera are mmap'd, not just read
 allow platform_app vendor_camera_data_file:file { getattr open read map };
@@ -43,8 +43,6 @@ allow hal_camera_default sysfs:file { getattr open read };
 # traversing the app data dir for the snapshot handoff (shell_data_file is neverallowed to any non-shell domain)
 allow hal_camera_default system_data_file:dir search;
 
-# codec2: the Xiaomi Codec2 store (audiocommon/ccode2) registers IComponentStore vendor0_software from the mediacodec domain - without it video recording never starts; the type is mediaswcodec, there is no media.swcodec in the linked policy.
-allow mediacodec default_android_service:service_manager add;
-allow mediacodec default_android_service:service_manager find;
-allow mediaserver default_android_service:service_manager find;
-allow mediaswcodec default_android_service:service_manager find;
+# codec2: the Xiaomi store (audiocommon/ccode2) registers IComponentStore/vendor0_software from the mediacodec process - without it video recording never starts. mediaserver and mediaswcodec need nothing: the platform already grants hal_codec2_client the find.
+allow mediacodec hal_codec2_service:service_manager add;
+allow mediacodec hal_codec2_service:service_manager find;
