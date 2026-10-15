@@ -1,0 +1,68 @@
+From 19dddace7c53e19674016a64d16b07402e42f3b4 Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Thu, 15 Oct 2026 21:00:36 +0000
+Subject: [PATCH] Cap watermark preview bitmaps at 512px to fix settings scroll
+ jank
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ .../com/xiaomi/cam/watermark/b.smali          | 43 +++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/smali_classes4/com/xiaomi/cam/watermark/b.smali b/smali_classes4/com/xiaomi/cam/watermark/b.smali
+index c369d6da..63556d13 100644
+--- a/smali_classes4/com/xiaomi/cam/watermark/b.smali
++++ b/smali_classes4/com/xiaomi/cam/watermark/b.smali
+@@ -1120,6 +1120,49 @@
+ 
+     :cond_4
+     :goto_1
++    if-eqz v0, :cond_5
++
++    invoke-virtual {v0}, Landroid/graphics/Bitmap;->getWidth()I
++
++    move-result v1
++
++    invoke-virtual {v0}, Landroid/graphics/Bitmap;->getHeight()I
++
++    move-result v2
++
++    if-ge v1, v2, :cond_wmax
++
++    move v3, v2
++
++    goto :cond_hmax
++
++    :cond_wmax
++    move v3, v1
++
++    :cond_hmax
++    const/16 v4, 0x200
++
++    if-le v3, v4, :cond_5
++
++    mul-int/lit16 v5, v1, 0x200
++
++    div-int/2addr v5, v3
++
++    if-eqz v5, :cond_5
++
++    mul-int/lit16 v6, v2, 0x200
++
++    div-int/2addr v6, v3
++
++    if-eqz v6, :cond_5
++
++    const/4 v1, 0x1
++
++    invoke-static {v0, v5, v6, v1}, Landroid/graphics/Bitmap;->createScaledBitmap(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;
++
++    move-result-object v0
++
++    :cond_5
+     return-object v0
+ .end method
+ 
+-- 
+2.43.0
+
