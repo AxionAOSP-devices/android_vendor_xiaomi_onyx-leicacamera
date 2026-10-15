@@ -2,9 +2,9 @@
 
 # platform_app: the capture handoff is bidirectional - the app registers a callback with the HAL (MiCamService BGService) and the provider calls back into it; missing the callback transfer stalls PostProcessor 12s on 'App buffer is not enough' -> onCaptureFailed.
 allow platform_app hal_camera_default:binder { call transfer };
-allow platform_app hal_camera_default:fd { use transfer };
+allow platform_app hal_camera_default:fd { use };
 allow hal_camera_default platform_app:binder { call transfer };
-allow hal_camera_default platform_app:fd { use transfer };
+allow hal_camera_default platform_app:fd { use };
 
 # Codec2 component store lookup while setting up a recording
 allow platform_app default_android_service:service_manager find;
