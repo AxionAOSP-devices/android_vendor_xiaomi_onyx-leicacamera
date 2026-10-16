@@ -1,6 +1,7 @@
 #include <android-base/logging.h>
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
+#include <sys/stat.h>
 #include "MiSysImpl.h"
 #include "HypSysIntl.h"
 
@@ -8,6 +9,12 @@ using aidl::vendor::xiaomi::hardware::misys::common::MiSysImpl;
 using aidl::vendor::xiaomi::hardware::misys::common::HypSysIntlImpl;
 
 int main() {
+    // init forks every service with a hardcoded umask(077), which would turn the
+    // 0664/0775 modes MiSysImpl asks for into 0600/0700 - cameraserver could then
+    // not read the materialised watermark templates and the watermark would be
+    // silently dropped from the saved JPEG.
+    umask(0022);
+
     ABinderProcess_setThreadPoolMaxThreadCount(4);
     ABinderProcess_startThreadPool();
 
