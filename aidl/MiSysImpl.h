@@ -4,6 +4,8 @@
 
 namespace aidl::vendor::xiaomi::hardware::misys::common {
 
+int MakeCameraDataReadable(const std::string& path, int depth);
+
 class MiSysImpl : public BnMiSysImpl {
 public:
     ndk::ScopedAStatus IsExists(const std::string& path, const std::string& file, bool* _aidl_return) override;

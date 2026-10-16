@@ -6,6 +6,7 @@
 #include "HypSysIntl.h"
 
 using aidl::vendor::xiaomi::hardware::misys::common::MiSysImpl;
+using aidl::vendor::xiaomi::hardware::misys::common::MakeCameraDataReadable;
 using aidl::vendor::xiaomi::hardware::misys::common::HypSysIntlImpl;
 
 int main() {
@@ -31,6 +32,9 @@ int main() {
     CHECK_EQ(status2, STATUS_OK) << "Failed to register " << hypSysName;
 
     LOG(INFO) << "Registered IMiSysImpl and IHypSysIntl successfully";
+
+    LOG(INFO) << "misys: repaired " << MakeCameraDataReadable("/data/vendor/camera", 8)
+              << " entries an older build left unreadable for cameraserver";
 
     ABinderProcess_joinThreadPool();
     return 0;

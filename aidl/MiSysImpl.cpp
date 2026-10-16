@@ -134,4 +134,27 @@ ScopedAStatus MiSysImpl::CopyFile(const std::string& inpath, const std::string& 
     return ScopedAStatus::ok();
 }
 
+// A build from before the umask fix left the materialised templates and LUTs at 0600/0700,
+// and the camera app skips the write as soon as IsExists() answers true, so upgrading keeps
+// those entries unreadable to cameraserver forever. Only bits are added, never taken away,
+// and a chmod on a file owned by another uid just fails harmlessly.
+int MakeCameraDataReadable(const std::string& path, int depth) {
+    DIR* dir = opendir(path.c_str());
+    if (!dir) return 0;
+    int repaired = 0;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (entry->d_name[0] == '.') continue;
+        std::string fullPath = path + "/" + entry->d_name;
+        struct stat st;
+        if (lstat(fullPath.c_str(), &st) != 0) continue;
+        bool isDir = S_ISDIR(st.st_mode);
+        mode_t want = isDir ? (S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) : (S_IRGRP | S_IROTH);
+        if ((st.st_mode & want) != want && chmod(fullPath.c_str(), st.st_mode | want) == 0) repaired++;
+        if (isDir && depth > 0) repaired += MakeCameraDataReadable(fullPath, depth - 1);
+    }
+    closedir(dir);
+    return repaired;
+}
+
 } // namespace aidl::vendor::xiaomi::hardware::misys::common
