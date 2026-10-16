@@ -22,6 +22,9 @@ ScopedAStatus MiSysImpl::MiSysCreateFolder(const std::string& path, const std::s
 ScopedAStatus MiSysImpl::MiSysCreateFolderMode(const std::string& path, const std::string& folder, int32_t perm) {
     std::string fullPath = path + "/" + folder;
     mkdir(fullPath.c_str(), perm);
+    // mkdir() applies the umask and ignores the mode when the folder already exists,
+    // so a folder made before the umask fix would stay 0700 forever.
+    chmod(fullPath.c_str(), perm);
     return ScopedAStatus::ok();
 }
 
@@ -29,6 +32,9 @@ ScopedAStatus MiSysImpl::MiSysWriteBuffer(const std::string& path, const std::st
     std::string fullPath = path + "/" + file;
     int fd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0664);
     if (fd >= 0) {
+        // open() ignores the mode once the file exists, so re-downloading a filter table
+        // over a 0600 leftover would keep cameraserver from reading it.
+        fchmod(fd, 0664);
         write(fd, buf.data(), len);
         close(fd);
     }
@@ -54,6 +60,7 @@ ScopedAStatus MiSysImpl::WriteToFile(const Ashmem& block, const std::string& pat
     int srcFd = block.fd.get();
     int dstFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0664);
     if (srcFd >= 0 && dstFd >= 0) {
+        fchmod(dstFd, 0664);
         char buffer[8192];
         int64_t remaining = size;
         ssize_t bytesRead;
@@ -115,6 +122,7 @@ ScopedAStatus MiSysImpl::CopyFile(const std::string& inpath, const std::string& 
     int src = open(inpath.c_str(), O_RDONLY);
     int dst = open(outpath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0664);
     if (src >= 0 && dst >= 0) {
+        fchmod(dst, 0664);
         char buf[8192];
         ssize_t n;
         while ((n = read(src, buf, sizeof(buf))) > 0) {
