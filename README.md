@@ -1,45 +1,37 @@
-# android_vendor_xiaomi_onyx-leicacamera
+## Leica Camera Configuration for POCO F7 (onyx)
 
-Leica camera vendor repo for the POCO F7 (`onyx`): the patched Dyper-based `com.android.camera` APK plus the MiSyS HAL, sepolicy and Leica assets it needs.
+### How to?
 
-## Install
+Steps 3 and 4 are written for the root of your ROM workspace, the folder that contains `vendor/`. If your shell is already inside the clone, drop the `vendor/xiaomi/onyx-leicacamera/` prefix from every path below.
 
-```sh
-mkdir -p vendor/xiaomi
-git clone https://github.com/Sachinpawar86/android_vendor_xiaomi_onyx-leicacamera vendor/xiaomi/onyx-leicacamera
-git lfs pull -C vendor/xiaomi/onyx-leicacamera
+1. Add this line to your BoardConfig.mk
 ```
-
-Or as a manifest entry:
-
-```xml
-<project path="vendor/xiaomi/onyx-leicacamera" name="Sachinpawar86/android_vendor_xiaomi_onyx-leicacamera" revision="lineage-23.2" />
+# Inherit from proprietary files for Leica Camera
+-include vendor/xiaomi/onyx-leicacamera/BoardConfigVendor.mk
 ```
-
-## Git LFS
-
-Only `proprietary/system/priv-app/MiuiCamera/MiuiCamera.apk` is a Git-LFS object; everything else is a plain git file.
-
-`repo sync` does not fetch LFS content, so after syncing a manifest clone you have to fetch it yourself or the build silently packages a 134-byte text pointer instead of the APK:
-
+2. And this line to your device.mk
+```
+# Call the Leica Camera setup
+$(call inherit-product-if-exists, vendor/xiaomi/onyx-leicacamera/onyx-leicacamera-vendor.mk)
+```
+3. Clone this repository to vendor/xiaomi/onyx-leicacamera, preferably with `--depth=1` to avoid having a big size locally clone
 ```sh
-sudo apt install git-lfs            # once per machine
+git clone --depth=1 -b lineage-23.2 https://gitlab.com/sachinbarange86/android_vendor_xiaomi_onyx-leicacamera vendor/xiaomi/onyx-leicacamera
+```
+4. The MiuiCamera APK is a Git LFS object and `repo sync` never fetches LFS, so pull it once or the build packages a 134-byte text pointer instead of the APK
+```sh
 git lfs install
+```
+Then, from the ROM workspace root:
+```sh
+git -C vendor/xiaomi/onyx-leicacamera lfs pull
+```
+Or from inside the clone:
+```sh
 git lfs pull
 ```
-
-Verify before starting a build (must print the real size, not `134`):
-
+Check it before building, it must print `137627716`:
 ```sh
 wc -c < vendor/xiaomi/onyx-leicacamera/proprietary/system/priv-app/MiuiCamera/MiuiCamera.apk
 ```
-
-## Device tree hooks
-
-```make
-# device/xiaomi/onyx/BoardConfig.mk
--include vendor/xiaomi/onyx-leicacamera/BoardConfigVendor.mk
-
-# device/xiaomi/onyx/device.mk
-$(call inherit-product-if-exists, vendor/xiaomi/onyx-leicacamera/onyx-leicacamera-vendor.mk)
-```
+5. Start building and enjoy!
