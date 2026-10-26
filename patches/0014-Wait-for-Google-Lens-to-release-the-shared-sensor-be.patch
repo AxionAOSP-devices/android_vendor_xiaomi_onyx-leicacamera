@@ -1,0 +1,294 @@
+From 5e30558f0294f92b4d43f48f757a567a8541aada Mon Sep 17 00:00:00 2001
+From: Sachin <sachinbarange86@gmail.com>
+Date: Mon, 26 Oct 2026 07:53:59 +0000
+Subject: [PATCH] Wait for Google Lens to release the shared sensor before
+ reopening camera 3
+
+Signed-off-by: Sachin <sachinbarange86@gmail.com>
+---
+ smali/com/android/camera/ActivityBase$b.smali |   4 +
+ smali/sachi/CamGuard.smali                    | 222 ++++++++++++++++++
+ smali_classes4/ea/f.smali                     |   2 +
+ smali_classes4/fa/e.smali                     |   2 +
+ 4 files changed, 230 insertions(+)
+ create mode 100755 smali/sachi/CamGuard.smali
+
+diff --git a/smali/com/android/camera/ActivityBase$b.smali b/smali/com/android/camera/ActivityBase$b.smali
+index 5c98bfec..41d4930d 100644
+--- a/smali/com/android/camera/ActivityBase$b.smali
++++ b/smali/com/android/camera/ActivityBase$b.smali
+@@ -39,6 +39,8 @@
+     .annotation build Lcom/android/camera/jacoco/JacocoForceIgnore;
+     .end annotation
+ 
++    invoke-static {p1}, Lsachi/CamGuard;->markFree(Ljava/lang/String;)V
++
+     const-string v0, "onCameraAvailable: "
+ 
+     invoke-static {v0, p1}, LB/Y1;->f(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+@@ -92,6 +94,8 @@
+     .annotation build Lcom/android/camera/jacoco/JacocoForceIgnore;
+     .end annotation
+ 
++    invoke-static {p1}, Lsachi/CamGuard;->markBusy(Ljava/lang/String;)V
++
+     const-string p0, "onCameraUnavailable: "
+ 
+     invoke-static {p0, p1}, LB/Y1;->f(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+diff --git a/smali/sachi/CamGuard.smali b/smali/sachi/CamGuard.smali
+new file mode 100755
+index 00000000..ec7ecb10
+--- /dev/null
++++ b/smali/sachi/CamGuard.smali
+@@ -0,0 +1,222 @@
++.class public Lsachi/CamGuard;
++.super Ljava/lang/Object;
++
++
++# static fields
++.field private static final BUSY:Ljava/util/HashSet;
++    .annotation system Ldalvik/annotation/Signature;
++        value = {
++            "Ljava/util/HashSet<Ljava/lang/String;>;"
++        }
++    .end annotation
++.end field
++
++.field private static volatile sArmedAt:J
++
++
++# direct methods
++.method static constructor <clinit>()V
++    .locals 1
++
++    new-instance v0, Ljava/util/HashSet;
++
++    invoke-direct {v0}, Ljava/util/HashSet;-><init>()V
++
++    sput-object v0, Lsachi/CamGuard;->BUSY:Ljava/util/HashSet;
++
++    return-void
++.end method
++
++.method public static declared-synchronized hasOther(Ljava/lang/String;)Z
++    .locals 3
++
++    sget-object v0, Lsachi/CamGuard;->BUSY:Ljava/util/HashSet;
++
++    invoke-virtual {v0}, Ljava/util/HashSet;->iterator()Ljava/util/Iterator;
++
++    move-result-object v0
++
++    :goto_0
++    invoke-interface {v0}, Ljava/util/Iterator;->hasNext()Z
++
++    move-result v1
++
++    if-eqz v1, :cond_0
++
++    invoke-interface {v0}, Ljava/util/Iterator;->next()Ljava/lang/Object;
++
++    move-result-object v1
++
++    check-cast v1, Ljava/lang/String;
++
++    invoke-virtual {v1, p0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
++
++    move-result v2
++
++    if-nez v2, :cond_1
++
++    const/4 v0, 0x1
++
++    return v0
++
++    :cond_1
++    goto :goto_0
++
++    :cond_0
++    const/4 v0, 0x0
++
++    return v0
++.end method
++
++.method public static declared-synchronized markBusy(Ljava/lang/String;)V
++    .locals 1
++
++    sget-object v0, Lsachi/CamGuard;->BUSY:Ljava/util/HashSet;
++
++    invoke-virtual {v0, p0}, Ljava/util/HashSet;->add(Ljava/lang/Object;)Z
++
++    return-void
++.end method
++
++.method public static declared-synchronized markFree(Ljava/lang/String;)V
++    .locals 1
++
++    sget-object v0, Lsachi/CamGuard;->BUSY:Ljava/util/HashSet;
++
++    invoke-virtual {v0, p0}, Ljava/util/HashSet;->remove(Ljava/lang/Object;)Z
++
++    return-void
++.end method
++
++.method public static noteEviction()V
++    .locals 2
++
++    invoke-static {}, Landroid/os/SystemClock;->uptimeMillis()J
++
++    move-result-wide v0
++
++    sput-wide v0, Lsachi/CamGuard;->sArmedAt:J
++
++    return-void
++.end method
++
++.method public static waitForOtherClientRelease(Ljava/lang/String;)V
++    .locals 10
++
++    sget-wide v0, Lsachi/CamGuard;->sArmedAt:J
++
++    const-wide/16 v2, 0x0
++
++    cmp-long v8, v0, v2
++
++    if-nez v8, :cond_guard
++
++    return-void
++
++    :cond_guard
++    sput-wide v2, Lsachi/CamGuard;->sArmedAt:J
++
++    invoke-static {}, Landroid/os/SystemClock;->uptimeMillis()J
++
++    move-result-wide v4
++
++    sub-long/2addr v4, v0
++
++    const-wide/32 v0, 0xea60
++
++    cmp-long v8, v4, v0
++
++    if-lez v8, :cond_0
++
++    return-void
++
++    :cond_0
++    const-wide/16 v0, 0x2bc
++
++    :try_start_0
++    invoke-static {v0, v1}, Ljava/lang/Thread;->sleep(J)V
++    :try_end_0
++    .catch Ljava/lang/InterruptedException; {:try_start_0 .. :try_end_0} :catch_0
++
++    goto :cond_4
++
++    :catch_0
++    move-exception v9
++
++    :cond_4
++    :try_start_1
++    invoke-static {}, Landroid/os/SystemClock;->uptimeMillis()J
++
++    move-result-wide v4
++
++    const-wide/16 v0, 0x5dc
++
++    add-long/2addr v4, v0
++
++    const-wide/16 v6, 0x0
++
++    :goto_1
++    invoke-static {p0}, Lsachi/CamGuard;->hasOther(Ljava/lang/String;)Z
++
++    move-result v8
++
++    if-eqz v8, :cond_2
++
++    invoke-static {}, Landroid/os/SystemClock;->uptimeMillis()J
++
++    move-result-wide v6
++
++    cmp-long v8, v6, v4
++
++    if-ltz v8, :cond_1
++
++    goto :cond_2
++
++    :cond_1
++    const-wide/16 v6, 0x28
++
++    invoke-static {v6, v7}, Ljava/lang/Thread;->sleep(J)V
++    :try_end_1
++    .catch Ljava/lang/InterruptedException; {:try_start_1 .. :try_end_1} :catch_1
++
++    goto :goto_1
++
++    :catch_1
++    move-exception v9
++
++    :cond_2
++    const-wide/16 v0, 0x12c
++
++    :try_start_2
++    invoke-static {v0, v1}, Ljava/lang/Thread;->sleep(J)V
++    :try_end_2
++    .catch Ljava/lang/InterruptedException; {:try_start_2 .. :try_end_2} :catch_2
++
++    goto :cond_5
++
++    :catch_2
++    move-exception v9
++
++    :cond_5
++    const-string v0, "SachiCamGuard"
++
++    new-instance v1, Ljava/lang/StringBuilder;
++
++    const-string v2, "reopening cid="
++
++    invoke-direct {v1, v2}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
++
++    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++
++    const-string v2, " after the previous client released the sensor"
++
++    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++
++    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
++
++    move-result-object v1
++
++    invoke-static {v0, v1}, Landroid/util/Log;->i(Ljava/lang/String;Ljava/lang/String;)I
++
++    return-void
++.end method
+diff --git a/smali_classes4/ea/f.smali b/smali_classes4/ea/f.smali
+index c1d8a911..bf5d3480 100644
+--- a/smali_classes4/ea/f.smali
++++ b/smali_classes4/ea/f.smali
+@@ -131,6 +131,8 @@
+         .end annotation
+     .end param
+ 
++    invoke-static {}, Lsachi/CamGuard;->noteEviction()V
++
+     invoke-virtual {p1}, Landroid/hardware/camera2/CameraDevice;->getId()Ljava/lang/String;
+ 
+     move-result-object v0
+diff --git a/smali_classes4/fa/e.smali b/smali_classes4/fa/e.smali
+index 88793757..33006563 100644
+--- a/smali_classes4/fa/e.smali
++++ b/smali_classes4/fa/e.smali
+@@ -685,6 +685,8 @@
+ 
+     iget-object v5, p0, Lfa/c;->c:Ljava/lang/String;
+ 
++    invoke-static {v5}, Lsachi/CamGuard;->waitForOtherClientRelease(Ljava/lang/String;)V
++
+     iget-object v6, p0, Lfa/e;->e:Lea/f;
+ 
+     invoke-virtual {v3, v5, v6, v4}, Landroid/hardware/camera2/CameraManager;->openCamera(Ljava/lang/String;Landroid/hardware/camera2/CameraDevice$StateCallback;Landroid/os/Handler;)V
+-- 
+2.43.0
+
